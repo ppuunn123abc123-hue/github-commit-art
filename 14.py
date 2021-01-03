@@ -2,48 +2,133 @@ import os
 import subprocess
 from datetime import datetime, timedelta
 
-# Your input data
-coordinates = [
-    {"x": 2, "y": 2}, {"x": 2, "y": 3}, {"x": 2, "y": 4}, {"x": 2, "y": 5}, {"x": 2, "y": 6},
-    {"x": 3, "y": 4}, {"x": 4, "y": 2}, {"x": 4, "y": 3}, {"x": 4, "y": 4}, {"x": 4, "y": 5},
-    {"x": 4, "y": 6}, {"x": 6, "y": 3}, {"x": 6, "y": 4}, {"x": 6, "y": 5}, {"x": 6, "y": 6},
-    {"x": 7, "y": 2}, {"x": 7, "y": 5}, {"x": 8, "y": 3}, {"x": 8, "y": 4}, {"x": 8, "y": 5},
-    {"x": 8, "y": 6}, {"x": 10, "y": 2}, {"x": 10, "y": 3}, {"x": 10, "y": 4}, {"x": 10, "y": 5},
-    {"x": 10, "y": 6}, {"x": 11, "y": 2}, {"x": 11, "y": 4}, {"x": 12, "y": 3}, {"x": 14, "y": 2},
-    {"x": 14, "y": 3}, {"x": 14, "y": 4}, {"x": 14, "y": 5}, {"x": 14, "y": 6}, {"x": 15, "y": 2},
-    {"x": 15, "y": 4}, {"x": 16, "y": 3}, {"x": 18, "y": 2}, {"x": 18, "y": 3}, {"x": 19, "y": 4},
-    {"x": 19, "y": 5}, {"x": 19, "y": 6}, {"x": 20, "y": 2}, {"x": 20, "y": 3}, {"x": 24, "y": 3},
-    {"x": 24, "y": 6}, {"x": 25, "y": 2}, {"x": 25, "y": 5}, {"x": 25, "y": 6}, {"x": 26, "y": 2},
-    {"x": 26, "y": 4}, {"x": 26, "y": 6}, {"x": 27, "y": 3}, {"x": 27, "y": 6}, {"x": 29, "y": 3},
-    {"x": 29, "y": 4}, {"x": 29, "y": 5}, {"x": 30, "y": 2}, {"x": 30, "y": 6}, {"x": 31, "y": 3},
-    {"x": 31, "y": 4}, {"x": 31, "y": 5}, {"x": 33, "y": 4}, {"x": 33, "y": 6}, {"x": 34, "y": 2},
-    {"x": 34, "y": 3}, {"x": 34, "y": 4}, {"x": 34, "y": 5}, {"x": 34, "y": 6}, {"x": 35, "y": 6},
-    {"x": 37, "y": 2}, {"x": 37, "y": 3}, {"x": 37, "y": 4}, {"x": 38, "y": 4}, {"x": 39, "y": 2},
-    {"x": 39, "y": 3}, {"x": 39, "y": 4}, {"x": 39, "y": 5}, {"x": 39, "y": 6}, {"x": 42, "y": 2},
-    {"x": 42, "y": 3}, {"x": 42, "y": 4}, {"x": 42, "y": 6}, {"x": 44, "y": 4}, {"x": 45, "y": 5},
-    {"x": 46, "y": 2}, {"x": 46, "y": 3}, {"x": 46, "y": 5}, {"x": 46, "y": 6}, {"x": 47, "y": 2},
-    {"x": 47, "y": 3}, {"x": 47, "y": 5}, {"x": 47, "y": 6}, {"x": 48, "y": 5}, {"x": 48, "y": 6},
-    {"x": 49, "y": 2}, {"x": 49, "y": 3}, {"x": 49, "y": 5}, {"x": 49, "y": 6}, {"x": 50, "y": 2},
-    {"x": 50, "y": 3}, {"x": 50, "y": 5}, {"x": 50, "y": 6}, {"x": 51, "y": 5}, {"x": 52, "y": 4}
-]
+# 7x5 pixel block font (uppercase only)
+FONT = {
+    "A": [
+        "01110",
+        "10001",
+        "10001",
+        "11111",
+        "10001",
+        "10001",
+        "10001",
+    ],
+    "B": [
+        "11110",
+        "10001",
+        "10001",
+        "11110",
+        "10001",
+        "10001",
+        "11110",
+    ],
+    "C": [
+        "01111",
+        "10000",
+        "10000",
+        "10000",
+        "10000",
+        "10000",
+        "01111",
+    ],
+    "H": [
+        "10001",
+        "10001",
+        "10001",
+        "11111",
+        "10001",
+        "10001",
+        "10001",
+    ],
+    "I": [
+        "11111",
+        "00100",
+        "00100",
+        "00100",
+        "00100",
+        "00100",
+        "11111",
+    ],
+    "L": [
+        "10000",
+        "10000",
+        "10000",
+        "10000",
+        "10000",
+        "10000",
+        "11111",
+    ],
+    "P": [
+        "11110",
+        "10001",
+        "10001",
+        "11110",
+        "10000",
+        "10000",
+        "10000",
+    ],
+    "T": [
+        "11111",
+        "00100",
+        "00100",
+        "00100",
+        "00100",
+        "00100",
+        "00100",
+    ],
+    "Z": [
+        "11111",
+        "00001",
+        "00010",
+        "00100",
+        "01000",
+        "10000",
+        "11111",
+    ],
+}
 
-commits_per_day = 60
+TEXT = "BITCH PLZ"
+COMMITS_PER_PIXEL = 50
+START_DATE = datetime(2021, 1, 3)  # First Sunday of 2021
 
-# Start date of the graph (53 weeks ago, Sunday)
-start_date = datetime.today() - timedelta(weeks=52)
-start_date -= timedelta(days=start_date.weekday() + 1)  # Go back to last Sunday
+def generate_coordinates(text):
+    coords = []
+    x_offset = 0
+    for char in text.upper():
+        if char == " ":
+            x_offset += 3  # space between words
+            continue
+        pattern = FONT.get(char)
+        if not pattern:
+            x_offset += 6
+            continue
+        for y, row in enumerate(pattern):
+            for x, val in enumerate(row):
+                if val == "1":
+                    coords.append({"x": x + x_offset, "y": y})
+        x_offset += 6  # 5 width + 1 space
+    return coords
 
-for point in coordinates:
-    x, y = point['x'], point['y']
-    commit_date = start_date + timedelta(weeks=x, days=y)
-    for i in range(commits_per_day):
-        with open("commit.txt", "a") as file:
-            file.write(f"Commit on {commit_date} - {i}\n")
-        env = os.environ.copy()
-        date_str = commit_date.strftime('%Y-%m-%dT12:00:00')
-        env['GIT_AUTHOR_DATE'] = date_str
-        env['GIT_COMMITTER_DATE'] = date_str
-        subprocess.run(["git", "add", "commit.txt"], env=env)
-        subprocess.run(["git", "commit", "-m", f"Commit on {commit_date} #{i}"], env=env)
+def main():
+    coords = generate_coordinates(TEXT)
+    total = len(coords) * COMMITS_PER_PIXEL
+    print(f"🧱 Generating ~{total} commits for '{TEXT}' in 2021...")
 
-print("Done generating commits!")
+    for point in coords:
+        week = point["x"]
+        day = point["y"]
+        commit_date = START_DATE + timedelta(weeks=week, days=day)
+        for i in range(COMMITS_PER_PIXEL):
+            env = os.environ.copy()
+            date_str = commit_date.strftime("%Y-%m-%dT12:00:00")
+            env["GIT_AUTHOR_DATE"] = date_str
+            env["GIT_COMMITTER_DATE"] = date_str
+            subprocess.run([
+                "git", "commit", "--allow-empty",
+                "-m", f"{TEXT} pixel ({week},{day}) commit #{i}"
+            ], env=env)
+
+    print("✅ Done! Push to GitHub and your 2021 graph will display 'BITCH PLZ'.")
+
+if __name__ == "__main__":
+    main()
